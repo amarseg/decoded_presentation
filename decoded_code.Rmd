@@ -1,14 +1,21 @@
 ---
-title: 'Text Mining: Sentiment Analysis'
+title: "Text Mining: Sentiment analysis"
 author: "Amalia Martínez"
-date: "21 October 2018"
-output: html_document
+date: "14 October 2018"
+output: ioslides_presentation
 ---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
 library(kableExtra)
 ```
+
+## 
+
+Code available at 
+<www.github.com/amarseg/decoded_presentation/>
+
 ## What is sentiment analysis?
 
 "The process of computationally identifying and categorizing opinions expressed in a piece of text, especially in order to determine whether the writer's attitude towards a particular topic, product, etc. is positive, negative, or neutral."
@@ -21,19 +28,15 @@ What can it be used for?
 
 ## Loading libraries and datasets
 
-Run this bit if the libraries are not installed in your R session
-
-```{r, eval = F}
+```{r, eval = F, echo = T,warning=F, message=F}
 install.packages('tidyverse')
 install.packages('tidytext')
 install.packages('janeaustenr')
+install.packages('wordcloud')
 ```
 
-Once they are installed, they are available for loading
 
-```{r, echo = TRUE}
-
-
+```{r, echo = TRUE,warning=F, message=F}
 library(tidyverse)
 library(tidytext)
 library(janeaustenr)
@@ -46,12 +49,13 @@ head(austen_books(), n = 15)
 
 ## Transform data into a format amenable for analysis
 
-```{r, echo = TRUE}
+```{r, echo = TRUE,warning=F, message=F}
 tidy_books <- austen_books() %>%
   group_by(book) %>%
   mutate(linenumber = row_number(),
-         chapter = cumsum(str_detect(text, regex("^chapter", 
-                                                 ignore_case = TRUE)))) %>%
+         chapter = cumsum(str_detect(text, 
+                                     regex("^chapter",
+                                           ignore_case = TRUE)))) %>%
   ungroup() %>%
   unnest_tokens(word, text)
 ```
@@ -72,7 +76,7 @@ from Saif Mohammad and Peter Turney
 get_sentiments("nrc")
 ```
 
-## Bing Sentiment datasets
+## BingSentiment datasets
 from Bing Liu and collaborators
 
 ```{r, echo = T}
@@ -82,22 +86,40 @@ get_sentiments("bing")
 
 
 ## How does the sentiment evolves throughout the novels?
-```{r, echo = T, message = F, warning = F}
+```{r, echo = T,warning=F, message=F}
 jane_austen_sentiment <- tidy_books %>%
   inner_join(get_sentiments("bing")) %>%
-  count(book, chapter, sentiment) %>%
+  count(book, index = chapter, sentiment) %>%
   spread(sentiment, n, fill = 0) %>%
   mutate(sentiment = positive - negative)
+```
 
-
+## How does the sentiment evolves throughout the novels?
+```{r, echo = T, eval = F,warning=F, message=F}
 ggplot(jane_austen_sentiment, aes(x = index, y = sentiment, fill = book)) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~book, ncol = 2, scales = "free_x")
 ```
 
+## How does the sentiment evolves throughout the novels?
+```{r, eval = T,warning=F, message=F}
+ggplot(jane_austen_sentiment, aes(x = index, y = sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free_x")
+```
 
 ## WordCloud
-```{r, echo = T, eval = T, message = F, warning = F}
+```{r, echo = T, eval = F,warning=F, message=F}
+library(wordcloud)
+
+tidy_books %>%
+  anti_join(stop_words) %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100))
+```
+
+## WordCloud
+```{r, eval = T, warning=F, message=F}
 library(wordcloud)
 
 tidy_books %>%
@@ -107,15 +129,20 @@ tidy_books %>%
 ```
 
 ## Most common positive and negative words
-```{r, echo = T, message = F, warning = F}
+```{r, echo = T, warning=F, message=F}
 bing_word_counts <- tidy_books %>%
   inner_join(get_sentiments("bing")) %>%
   count(word, sentiment, sort = TRUE) %>%
   ungroup()
 
+```
+## Most common positive and negative words
 
+```{r}
 bing_word_counts
-
+```
+## Most common positive and negative words
+```{r, echo = T, eval = F,warning=F, message=F}
 bing_word_counts %>%
   group_by(sentiment) %>%
   top_n(10) %>%
@@ -129,10 +156,23 @@ bing_word_counts %>%
   coord_flip()
 ```
 
+## Most common positive and negative words
+```{r, echo = F, eval = T, message = F, warning=F}
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Contribution to sentiment",
+       x = NULL) +
+  coord_flip()
+```
 
-
-## Most common words for different emotions, change of dataset
-```{r, echo = T, eval = T, message = F, warning = F}
+## Most common words for different emotions
+```{r, echo = F, eval = T, message = F, warning = F}
 nrc_word_counts <- tidy_books %>%
   inner_join(get_sentiments("nrc")) %>%
   count(word, sentiment, sort = TRUE) %>%
@@ -151,3 +191,6 @@ nrc_word_counts %>%
   coord_flip()
 ```
 
+#Thanks for your attention! Any questions?
+
+A more detailed explanation and analysis can be found in <https://www.tidytextmining.com/>
