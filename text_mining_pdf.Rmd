@@ -7,7 +7,6 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(tidyverse)
-library(kableExtra)
 ```
 ## What is sentiment analysis?
 
@@ -27,6 +26,7 @@ Run this bit if the libraries are not installed in your R session
 install.packages('tidyverse')
 install.packages('tidytext')
 install.packages('janeaustenr')
+install.packages('wordcloud')
 ```
 
 Once they are installed, they are available for loading
@@ -85,7 +85,7 @@ get_sentiments("bing")
 ```{r, echo = T, message = F, warning = F}
 jane_austen_sentiment <- tidy_books %>%
   inner_join(get_sentiments("bing")) %>%
-  count(book, chapter, sentiment) %>%
+  count(book, index = chapter, sentiment) %>%
   spread(sentiment, n, fill = 0) %>%
   mutate(sentiment = positive - negative)
 
